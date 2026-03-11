@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #f5f5f3;
@@ -643,24 +642,27 @@
     const BALL_COLORS = ['ball-1', 'ball-2', 'ball-3', 'ball-4', 'ball-5', 'ball-6'];
     const MIN = 1;
 
-    // Supabase: Vercel 환경 변수(SUPABASE_URL, SUPABASE_ANON_KEY)를 api/config에서 불러와 사용
-    let supabase = null;
-    (async function initSupabase() {
-      try {
-        const res = await fetch(window.location.origin + '/api/config');
-        if (!res.ok) return;
-        const { SUPABASE_URL, SUPABASE_ANON_KEY } = await res.json();
-        if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      } catch (_) {}
-    })();
-
-    async function saveLottoToSupabase(numbers, bonus) {
-      for (let i = 0; i < 15 && !supabase; i++) await new Promise(r => setTimeout(r, 200));
+    // Supabase: 추첨과 완전 분리. 버튼 연결 후에만 스크립트 로드 (추첨 방해 안 함)
+    var supabase = null;
+    function loadSupabaseAndInit() {
+      if (window.supabase) {
+        fetch(window.location.origin + '/api/config').then(function(r) { return r.ok ? r.json() : {}; }).then(function(d) {
+          if (d.SUPABASE_URL && d.SUPABASE_ANON_KEY) supabase = window.supabase.createClient(d.SUPABASE_URL, d.SUPABASE_ANON_KEY);
+        }).catch(function() {});
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      s.onload = function() {
+        fetch(window.location.origin + '/api/config').then(function(r) { return r.ok ? r.json() : {}; }).then(function(d) {
+          if (d.SUPABASE_URL && d.SUPABASE_ANON_KEY && window.supabase) supabase = window.supabase.createClient(d.SUPABASE_URL, d.SUPABASE_ANON_KEY);
+        }).catch(function() {});
+      };
+      document.body.appendChild(s);
+    }
+    function saveLottoToSupabase(numbers, bonus) {
       if (!supabase) return;
-      try {
-        await supabase.from('lotto_draws').insert([{ numbers, bonus }]);
-      } catch (_) {}
+      try { supabase.from('lotto_draws').insert([{ numbers: numbers, bonus: bonus }]); } catch (e) {}
     }
 
     // 2026년 당첨 데이터 (동행복권 API: 2026 회차 약 1204~1256)
@@ -931,6 +933,8 @@
 
     btnDraw.addEventListener('click', draw);
     renderHistory();
+    // 추첨 버튼 연결 끝난 뒤 Supabase만 나중에 로드 (추첨에 영향 없음)
+    setTimeout(loadSupabaseAndInit, 100);
   </script>
 </body>
 </html>
