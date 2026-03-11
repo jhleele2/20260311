@@ -1,0 +1,15 @@
+---
+description: index.html 수정 시 Git에 커밋·푸시 반영
+globs: index.html
+alwaysApply: false
+---
+
+# index.html 수정 후 Git 반영
+
+- **index.html**을 수정했으면 변경사항을 Git에 반영한다.
+- 다음 순서로 실행한다:
+  1. `git add index.html`
+  2. `git commit -m "메시지"` (간단한 영문 또는 한글 메시지)
+  3. `git push origin main`
+- Windows에서 git이 PATH에 없으면 `"C:\Program Files\Git\bin\git.exe"` 전체 경로로 실행한다.
+- 푸시는 네트워크 권한이 필요할 수 있다.

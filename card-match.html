@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>카드 짝맞추기 게임</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Jua', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      color: #e8e8e8;
+    }
+
+    .game-wrap {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 3.2rem;
+      margin-bottom: 0.8rem;
+      background: linear-gradient(90deg, #e94560, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+    }
+
+    .stats {
+      display: flex;
+      gap: 3rem;
+      margin-bottom: 2rem;
+      font-size: 1.6rem;
+      color: #a0a0a0;
+    }
+
+    .stats span {
+      color: #e94560;
+      font-weight: bold;
+      font-size: 1.8rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      perspective: 1200px;
+    }
+
+    .card {
+      aspect-ratio: 1;
+      min-height: 140px;
+      position: relative;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+      pointer-events: none;
+    }
+
+    .card.matched {
+      transform: rotateY(180deg);
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .card.matched .card-inner {
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+    }
+
+    .card-inner {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      transition: box-shadow 0.3s;
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+    }
+
+    .card-front {
+      background: linear-gradient(145deg, #2d2d44, #252538);
+      border: 3px solid #3d3d5c;
+      transform: rotateY(180deg);
+    }
+
+    .card-back {
+      background: linear-gradient(145deg, #e94560, #c73e54);
+      border: 3px solid #ff6b6b;
+      color: white;
+      font-size: 3rem;
+    }
+
+    .card-back::after {
+      content: '?';
+      font-weight: bold;
+      font-size: 3.5rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .btn-restart {
+      margin-top: 2.5rem;
+      padding: 16px 40px;
+      font-size: 1.4rem;
+      font-family: 'Jua', sans-serif;
+      background: linear-gradient(135deg, #e94560, #ff6b6b);
+      border: none;
+      border-radius: 25px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-restart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(233, 69, 96, 0.5);
+    }
+
+    .btn-restart:active {
+      transform: translateY(0);
+    }
+
+    .win-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .win-overlay.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .win-box {
+      background: linear-gradient(145deg, #252538, #1a1a2e);
+      padding: 3.5rem;
+      border-radius: 24px;
+      text-align: center;
+      border: 3px solid #e94560;
+      box-shadow: 0 0 40px rgba(233, 69, 96, 0.3);
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .win-box h2 {
+      color: #e94560;
+      font-size: 2.4rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .win-box p {
+      color: #a0a0a0;
+      margin-bottom: 1.5rem;
+      font-size: 1.4rem;
+    }
+
+    .win-box .btn-restart {
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .board {
+        gap: 14px;
+        max-width: 100%;
+      }
+      .card {
+        min-height: 100px;
+      }
+      .card-front {
+        font-size: 2.8rem;
+      }
+      .card-back::after {
+        font-size: 2.5rem;
+      }
+      h1 {
+        font-size: 2.4rem;
+      }
+      .stats {
+        font-size: 1.3rem;
+      }
+      .stats span {
+        font-size: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .board {
+        gap: 10px;
+      }
+      .card {
+        min-height: 80px;
+      }
+      .card-front {
+        font-size: 2.2rem;
+      }
+      .card-back::after {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+    <h1>🃏 카드 짝맞추기</h1>
+    <div class="stats">
+      <p>이동 횟수: <span id="moves">0</span></p>
+      <p>맞춘 짝: <span id="pairs">0</span> / 8</p>
+    </div>
+    <div class="board" id="board"></div>
+    <button class="btn-restart" id="restart">다시 하기</button>
+  </div>
+
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-box">
+      <h2>🎉 축하합니다!</h2>
+      <p>모든 짝을 맞췄어요!</p>
+      <p>총 <span id="finalMoves">0</span>번 만에 완료했어요.</p>
+      <button class="btn-restart" id="playAgain">한 번 더 하기</button>
+    </div>
+  </div>
+
+  <script>
+    // 서로 확실히 구분되는 이모지 (동물·사물·기호 섞음)
+    const EMOJIS = ['🐶', '🐱', '🚗', '⭐', '❤️', '🌙', '☀️', '🔥'];
+    let cards = [];
+    let flippedCards = [];
+    let moves = 0;
+    let matchedPairs = 0;
+    let lockBoard = false;
+
+    const boardEl = document.getElementById('board');
+    const movesEl = document.getElementById('moves');
+    const pairsEl = document.getElementById('pairs');
+    const winOverlay = document.getElementById('winOverlay');
+    const finalMovesEl = document.getElementById('finalMoves');
+
+    function initGame() {
+      cards = [...EMOJIS, ...EMOJIS];
+      cards = shuffle(cards);
+      flippedCards = [];
+      moves = 0;
+      matchedPairs = 0;
+      lockBoard = false;
+      updateStats();
+      winOverlay.classList.remove('show');
+      renderBoard();
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      cards.forEach((emoji, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.index = index;
+        card.dataset.emoji = emoji;
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-front"></div>
+            <div class="card-back"></div>
+          </div>
+        `;
+        // 카드마다 자기 이모지를 직접 넣어서 구분되게
+        const front = card.querySelector('.card-front');
+        front.textContent = emoji;
+        card.addEventListener('click', () => flipCard(card, index));
+        boardEl.appendChild(card);
+      });
+    }
+
+    function flipCard(cardEl, index) {
+      if (lockBoard) return;
+      if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+      if (flippedCards.length >= 2) return;
+
+      cardEl.classList.add('flipped');
+      flippedCards.push({ el: cardEl, index, emoji: cards[index] });
+
+      if (flippedCards.length === 2) {
+        moves++;
+        updateStats();
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      lockBoard = true;
+      const [first, second] = flippedCards;
+
+      // 같은 카드 두 번 클릭 방지
+      if (first.index === second.index) {
+        first.el.classList.remove('flipped');
+        flippedCards = [];
+        lockBoard = false;
+        moves--;
+        updateStats();
+        return;
+      }
+
+      if (first.emoji === second.emoji) {
+        // 맞춤: flipped 유지한 채로 matched만 추가 (카드가 다시 안 뒤집히게)
+        first.el.classList.add('matched');
+        second.el.classList.add('matched');
+        matchedPairs++;
+        updateStats();
+        flippedCards = [];
+        lockBoard = false;
+        if (matchedPairs === EMOJIS.length) {
+          setTimeout(showWin, 400);
+        }
+      } else {
+        // 틀림: 잠시 후 뒤집기
+        setTimeout(() => {
+          first.el.classList.remove('flipped');
+          second.el.classList.remove('flipped');
+          flippedCards = [];
+          lockBoard = false;
+        }, 800);
+      }
+    }
+
+    function updateStats() {
+      movesEl.textContent = moves;
+      pairsEl.textContent = matchedPairs;
+    }
+
+    function showWin() {
+      finalMovesEl.textContent = moves;
+      winOverlay.classList.add('show');
+    }
+
+    document.getElementById('restart').addEventListener('click', initGame);
+    document.getElementById('playAgain').addEventListener('click', initGame);
+
+    initGame();
+  </script>
+</body>
+</html>

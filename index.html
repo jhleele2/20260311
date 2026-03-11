@@ -193,19 +193,17 @@
 
     .aot-img-wrap {
       margin: 0 auto 1.25rem;
-      max-width: 200px;
-      aspect-ratio: 1;
+      max-width: 280px;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-      background: url('keroro-characters.png') no-repeat;
-      background-size: 800% 200%;
-      background-position: 0% 0%;
       overflow: hidden;
     }
-    .aot-img-wrap.empty {
-      background-image: none;
-      background-color: var(--border);
+    .aot-img-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      vertical-align: top;
     }
 
     h1 {
@@ -316,16 +314,16 @@
     .balls-row {
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 0.625rem;
+      align-items: flex-start;
+      gap: 0.75rem;
       flex-wrap: wrap;
-      min-height: 72px;
+      min-height: 90px;
     }
 
     .bonus-row {
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.5rem;
       margin-top: 1.25rem;
       padding-top: 1.25rem;
@@ -340,85 +338,75 @@
     }
 
     .ball {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.0625rem;
-      letter-spacing: -0.02em;
-      color: var(--black);
-      background: var(--card-bg);
-      border: 2px solid var(--black);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      gap: 0.5rem;
+      transition: transform 0.2s ease;
     }
 
-    .ball.ball-bonus {
-      border-style: dashed;
-      border-width: 2px;
-    }
-
-    .ball.animate {
-      animation: popIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    .ball {
-      position: relative;
-    }
+    .ball.ball-bonus .ball-face { border-style: dashed; }
 
     .ball.ball-enter {
       animation: ballDropIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
-    .ball.rolling {
+    .ball-face {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 2px solid var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .ball.rolling .ball-face {
       animation: ballPulse 0.12s ease-in-out infinite;
       box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.2);
     }
 
-    .ball.revealed {
+    .ball.revealed .ball-face {
       animation: ballReveal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.15);
     }
 
-    .ball.revealed::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 50%;
-      border: 2px solid rgba(26, 26, 26, 0.25);
-      animation: flashRing 0.5s ease-out forwards;
-      pointer-events: none;
-    }
-
-    .ball.ball-bonus.revealed {
-      animation: ballBonusReveal 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    }
-
-    .ball.ball-bonus.revealed::after {
-      border-color: rgba(26, 26, 26, 0.2);
-      animation: flashRingGold 0.6s ease-out forwards;
-    }
-
+    /* 케로로 스프라이트: 8열×2행 그리드, 캐릭터마다 한 칸씩 */
     .ball .ball-char {
       position: absolute;
-      inset: 2px;
+      inset: 0;
       border-radius: 50%;
       background: url('keroro-characters.png') no-repeat;
       background-size: 800% 200%;
+      background-color: var(--card-bg);
       opacity: 0;
       transition: opacity 0.25s ease;
       pointer-events: none;
     }
     .ball.revealed .ball-char { opacity: 1; }
-    .ball .ball-num {
-      position: relative;
-      z-index: 1;
+
+    .ball .ball-placeholder {
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.125rem;
       color: var(--black);
-      text-shadow: 0 0 8px rgba(255,255,255,0.9);
+      z-index: 1;
+    }
+    .ball.revealed .ball-placeholder { display: none; }
+
+    .ball .ball-num {
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      min-height: 1.25rem;
+    }
+
+    .ball.ball-bonus.revealed .ball-face {
+      animation: ballBonusReveal 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
     @keyframes popIn {
@@ -630,7 +618,9 @@
     <main class="main">
   <div class="container">
     <header class="header">
-      <div class="aot-img-wrap empty" id="keroroDisplay" title="나온 번호의 케로로 캐릭터"></div>
+      <div class="aot-img-wrap">
+        <img src="keroro-characters.png" alt="케로로 캐릭터" />
+      </div>
       <h1>로또 번호 추첨</h1>
       <p class="subtitle">행운의 번호를 뽑아보세요</p>
     </header>
@@ -797,7 +787,10 @@
     const ROLL_SLOW_STEPS = 5;
     const ROLL_TOTAL_QUICK = 10;
     const KERORO_CHARS = 13;
-    function getRandomCharIndex() { return Math.floor(Math.random() * KERORO_CHARS); }
+    function getRandomCharIndex() {
+      if (Math.random() < 0.6) return Math.floor(Math.random() * 5);
+      return 5 + Math.floor(Math.random() * 8);
+    }
 
     const ballsRow = document.getElementById('ballsRow');
     const emptyState = document.getElementById('emptyState');
@@ -858,31 +851,26 @@
       setTimeout(() => wrap.remove(), 1800);
     }
 
+    /* 8열×2행 그리드: 0~7=1행, 8~12=2행. CSS % 기준으로 칸마다 정확히 이동 */
     function setBallCharPosition(ballEl) {
       var charIdx = parseInt(ballEl.getAttribute('data-char'), 10) || 0;
+      if (charIdx < 0 || charIdx >= KERORO_CHARS) charIdx = 0;
       var col = charIdx % 8;
       var row = Math.floor(charIdx / 8);
-      var x = -col * 12.5;
-      var y = -row * 100;
+      var x = (col / 7) * 100;
+      var y = row * 100;
       var inner = ballEl.querySelector('.ball-char');
-      if (inner) inner.style.backgroundPosition = x + '% ' + y + '%';
-      updateKeroroDisplay(charIdx);
-    }
-
-    function updateKeroroDisplay(charIdx) {
-      var el = document.getElementById('keroroDisplay');
-      if (!el) return;
-      el.classList.remove('empty');
-      el.style.backgroundImage = 'url(keroro-characters.png)';
-      var col = charIdx % 8;
-      var row = Math.floor(charIdx / 8);
-      el.style.backgroundPosition = (-col * 12.5) + '% ' + (-row * 100) + '%';
+      if (inner) {
+        inner.style.backgroundPosition = x + '% ' + y + '%';
+      }
     }
 
     function rollBall(ballEl, finalNumber, isBonus, onComplete) {
       ballEl.classList.add('rolling');
+      var placeholderEl = ballEl.querySelector('.ball-placeholder');
       var numEl = ballEl.querySelector('.ball-num');
-      if (numEl) numEl.textContent = '?'; else ballEl.textContent = '?';
+      if (placeholderEl) placeholderEl.textContent = '?';
+      if (numEl) numEl.textContent = '?';
 
       let step = 0;
       const totalQuick = ROLL_TOTAL_QUICK;
@@ -891,27 +879,26 @@
 
       function tick() {
         step++;
+        var show = step <= totalQuick ? randomNum() : (step <= totalQuick + slowSteps ? (step - totalQuick - 1 === slowSteps - 1 ? finalNumber : randomNum()) : null);
+        if (show !== null) {
+          if (placeholderEl) placeholderEl.textContent = show;
+          if (numEl) numEl.textContent = show;
+        }
         if (step <= totalQuick) {
-          if (numEl) numEl.textContent = randomNum(); else ballEl.textContent = randomNum();
           setTimeout(tick, ROLL_FAST_MS);
           return;
         }
         if (step <= totalQuick + slowSteps) {
           const slowIndex = step - totalQuick - 1;
-          var show = slowIndex === slowSteps - 1 ? finalNumber : randomNum();
-          if (numEl) numEl.textContent = show; else ballEl.textContent = show;
           if (slowIndex < slowSteps - 1) {
             setTimeout(tick, slowDelays[slowIndex]);
           } else {
             ballEl.classList.remove('rolling');
             ballEl.classList.add('revealed');
-            if (numEl) numEl.textContent = finalNumber; else ballEl.textContent = finalNumber;
+            if (numEl) numEl.textContent = finalNumber;
             setBallCharPosition(ballEl);
             shakeCard();
-            setTimeout(() => {
-              ballEl.classList.remove('revealed');
-              onComplete();
-            }, isBonus ? 320 : 280);
+            setTimeout(() => onComplete(), isBonus ? 320 : 280);
           }
           return;
         }
@@ -956,8 +943,6 @@
       ballsRow.innerHTML = '';
       drawStatus.style.display = 'block';
       bonusRow.style.display = 'none';
-      var keroroEl = document.getElementById('keroroDisplay');
-      if (keroroEl) { keroroEl.classList.add('empty'); keroroEl.style.backgroundImage = 'none'; }
       const ballEls = [];
 
       function runNext(index) {
@@ -966,7 +951,7 @@
           bonusRow.style.display = 'flex';
           bonusBall.className = 'ball ball-bonus ball-enter';
           bonusBall.setAttribute('data-char', getRandomCharIndex());
-          bonusBall.innerHTML = '<span class="ball-char"></span><span class="ball-num">?</span>';
+          bonusBall.innerHTML = '<span class="ball-face"><span class="ball-char"></span><span class="ball-placeholder">?</span></span><span class="ball-num">?</span>';
           bonusBall.classList.remove('rolling', 'revealed');
           setTimeout(() => {
             bonusBall.classList.remove('ball-enter');
@@ -989,7 +974,7 @@
         const ball = document.createElement('div');
         ball.className = `ball ${BALL_COLORS[index]} ball-enter`;
         ball.setAttribute('data-char', getRandomCharIndex());
-        ball.innerHTML = '<span class="ball-char"></span><span class="ball-num">?</span>';
+        ball.innerHTML = '<span class="ball-face"><span class="ball-char"></span><span class="ball-placeholder">?</span></span><span class="ball-num">?</span>';
         ballsRow.appendChild(ball);
         ballEls.push(ball);
         setTimeout(() => {
