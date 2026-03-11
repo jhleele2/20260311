@@ -82,11 +82,32 @@
     .card.matched {
       transform: rotateY(180deg);
       pointer-events: none;
-      opacity: 0.7;
+      animation: matchedPop 0.4s ease forwards;
+    }
+
+    @keyframes matchedPop {
+      0% { transform: rotateY(180deg) scale(1); }
+      50% { transform: rotateY(180deg) scale(1.08); }
+      100% { transform: rotateY(180deg) scale(1); }
     }
 
     .card.matched .card-inner {
-      box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+      box-shadow:
+        0 0 0 3px rgba(255, 215, 0, 0.9),
+        0 0 25px rgba(255, 215, 0, 0.5),
+        0 8px 25px rgba(0, 0, 0, 0.25);
+      border-radius: 16px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card.matched .card-front {
+      background: linear-gradient(145deg, #3d3d5c 0%, #2d2d44 50%, #252538 100%);
+      border: 3px solid rgba(255, 215, 0, 0.7);
+      box-shadow: inset 0 0 30px rgba(255, 215, 0, 0.15);
+    }
+
+    .card.matched .card-front .emoji {
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
     }
 
     .card-inner {
@@ -96,25 +117,54 @@
       border-radius: 16px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
       transition: box-shadow 0.3s;
+      transform-style: preserve-3d;
     }
 
     .card-front,
     .card-back {
       position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       border-radius: 16px;
       backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 4rem;
     }
 
+    .card-back {
+      transform: rotateY(0deg);
+      z-index: 2;
+    }
+
     .card-front {
       background: linear-gradient(145deg, #2d2d44, #252538);
       border: 3px solid #3d3d5c;
       transform: rotateY(180deg);
+      z-index: 1;
+      color: #fff;
+      font-size: 3.5rem;
+      line-height: 1;
+    }
+
+    .card-front .emoji {
+      font-style: normal;
+    }
+
+    /* 뒤집힌 카드: 뒷면(?) 완전히 숨기고, 앞면(도형+글자)만 보이게 */
+    .card.flipped .card-back,
+    .card.matched .card-back {
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    .card.flipped .card-front,
+    .card.matched .card-front {
+      opacity: 1;
+      visibility: visible;
     }
 
     .card-back {
@@ -211,6 +261,30 @@
       margin-top: 1rem;
     }
 
+    .memorize-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 1.2rem 2.5rem;
+      border-radius: 16px;
+      font-size: 1.8rem;
+      z-index: 50;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .memorize-msg.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .board-wrap {
+      position: relative;
+    }
+
     @media (max-width: 768px) {
       .board {
         gap: 14px;
@@ -259,8 +333,11 @@
       <p>이동 횟수: <span id="moves">0</span></p>
       <p>맞춘 짝: <span id="pairs">0</span> / 8</p>
     </div>
-    <div class="board" id="board"></div>
-    <button class="btn-restart" id="restart">다시 하기</button>
+    <div class="board-wrap">
+      <div class="memorize-msg" id="memorizeMsg">위치를 기억하세요!</div>
+      <div class="board" id="board"></div>
+    </div>
+    <button class="btn-restart" id="restart">재시작</button>
   </div>
 
   <div class="win-overlay" id="winOverlay">
@@ -268,35 +345,66 @@
       <h2>🎉 축하합니다!</h2>
       <p>모든 짝을 맞췄어요!</p>
       <p>총 <span id="finalMoves">0</span>번 만에 완료했어요.</p>
-      <button class="btn-restart" id="playAgain">한 번 더 하기</button>
+      <button class="btn-restart" id="playAgain">재시작</button>
     </div>
   </div>
 
   <script>
-    // 서로 확실히 구분되는 이모지 (동물·사물·기호 섞음)
-    const EMOJIS = ['🐶', '🐱', '🚗', '⭐', '❤️', '🌙', '☀️', '🔥'];
+    const EMOJIS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐹', '🐭'];
+    const MEMORIZE_SEC = 5;
+
     let cards = [];
     let flippedCards = [];
     let moves = 0;
     let matchedPairs = 0;
     let lockBoard = false;
+    let gamePhase = 'memorize'; // 'memorize' | 'playing'
+    let memorizeTimer = null;
 
     const boardEl = document.getElementById('board');
     const movesEl = document.getElementById('moves');
     const pairsEl = document.getElementById('pairs');
     const winOverlay = document.getElementById('winOverlay');
     const finalMovesEl = document.getElementById('finalMoves');
+    const memorizeMsgEl = document.getElementById('memorizeMsg');
 
     function initGame() {
+      if (memorizeTimer) clearTimeout(memorizeTimer);
       cards = [...EMOJIS, ...EMOJIS];
       cards = shuffle(cards);
       flippedCards = [];
       moves = 0;
       matchedPairs = 0;
       lockBoard = false;
+      gamePhase = 'memorize';
       updateStats();
       winOverlay.classList.remove('show');
-      renderBoard();
+      memorizeMsgEl.textContent = '위치를 기억하세요!';
+      memorizeMsgEl.classList.remove('hide');
+      renderBoard(true);
+
+      memorizeTimer = setTimeout(() => {
+        startPlaying();
+      }, MEMORIZE_SEC * 1000);
+
+      // 카운트다운 표시
+      let left = MEMORIZE_SEC;
+      const countInterval = setInterval(() => {
+        left--;
+        if (left > 0) {
+          memorizeMsgEl.textContent = left + '초 후 뒤집힙니다...';
+        } else {
+          clearInterval(countInterval);
+        }
+      }, 1000);
+    }
+
+    function startPlaying() {
+      gamePhase = 'playing';
+      memorizeMsgEl.textContent = '시작!';
+      memorizeMsgEl.classList.add('hide');
+      const allCards = boardEl.querySelectorAll('.card');
+      allCards.forEach(card => card.classList.remove('flipped'));
     }
 
     function shuffle(arr) {
@@ -308,28 +416,26 @@
       return a;
     }
 
-    function renderBoard() {
+    function renderBoard(showAllFronts) {
       boardEl.innerHTML = '';
       cards.forEach((emoji, index) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.index = index;
-        card.dataset.emoji = emoji;
         card.innerHTML = `
           <div class="card-inner">
-            <div class="card-front"></div>
+            <div class="card-front"><span class="emoji">${emoji}</span></div>
             <div class="card-back"></div>
           </div>
         `;
-        // 카드마다 자기 이모지를 직접 넣어서 구분되게
-        const front = card.querySelector('.card-front');
-        front.textContent = emoji;
+        if (showAllFronts) card.classList.add('flipped');
         card.addEventListener('click', () => flipCard(card, index));
         boardEl.appendChild(card);
       });
     }
 
     function flipCard(cardEl, index) {
+      if (gamePhase !== 'playing') return;
       if (lockBoard) return;
       if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
       if (flippedCards.length >= 2) return;
@@ -348,7 +454,6 @@
       lockBoard = true;
       const [first, second] = flippedCards;
 
-      // 같은 카드 두 번 클릭 방지
       if (first.index === second.index) {
         first.el.classList.remove('flipped');
         flippedCards = [];
@@ -359,7 +464,6 @@
       }
 
       if (first.emoji === second.emoji) {
-        // 맞춤: flipped 유지한 채로 matched만 추가 (카드가 다시 안 뒤집히게)
         first.el.classList.add('matched');
         second.el.classList.add('matched');
         matchedPairs++;
@@ -370,7 +474,6 @@
           setTimeout(showWin, 400);
         }
       } else {
-        // 틀림: 잠시 후 뒤집기
         setTimeout(() => {
           first.el.classList.remove('flipped');
           second.el.classList.remove('flipped');

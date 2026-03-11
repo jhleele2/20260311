@@ -315,26 +315,37 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      gap: 0.75rem;
-      flex-wrap: wrap;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
       min-height: 90px;
+    }
+
+    @media (max-width: 520px) {
+      .balls-row { gap: 0.35rem; }
     }
 
     .bonus-row {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      gap: 0.5rem;
-      margin-top: 1.25rem;
-      padding-top: 1.25rem;
+      align-items: center;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
       border-top: 1px solid var(--border);
     }
 
+    .bonus-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .bonus-label {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--text-tertiary);
-      letter-spacing: 0.02em;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     .ball {
@@ -632,8 +643,10 @@
           <span class="empty-state" id="emptyState">추첨 버튼을 눌러주세요</span>
         </div>
         <div class="bonus-row" id="bonusRow" style="display: none;">
-          <span class="bonus-label">보너스</span>
-          <div class="ball ball-bonus" id="bonusBall"></div>
+          <div class="bonus-wrap">
+            <span class="bonus-label">보너스</span>
+            <div class="ball ball-bonus" id="bonusBall"></div>
+          </div>
         </div>
       </div>
 
