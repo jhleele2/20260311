@@ -193,16 +193,19 @@
 
     .aot-img-wrap {
       margin: 0 auto 1.25rem;
-      max-width: 280px;
-    }
-
-    .aot-img-wrap img {
-      width: 100%;
-      height: auto;
-      display: block;
+      max-width: 200px;
+      aspect-ratio: 1;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+      background: url('keroro-characters.png') no-repeat;
+      background-size: 800% 200%;
+      background-position: 0% 0%;
+      overflow: hidden;
+    }
+    .aot-img-wrap.empty {
+      background-image: none;
+      background-color: var(--border);
     }
 
     h1 {
@@ -396,6 +399,26 @@
     .ball.ball-bonus.revealed::after {
       border-color: rgba(26, 26, 26, 0.2);
       animation: flashRingGold 0.6s ease-out forwards;
+    }
+
+    .ball .ball-char {
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      background: url('keroro-characters.png') no-repeat;
+      background-size: 800% 200%;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .ball.revealed .ball-char { opacity: 1; }
+    .ball .ball-num {
+      position: relative;
+      z-index: 1;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--black);
+      text-shadow: 0 0 8px rgba(255,255,255,0.9);
     }
 
     @keyframes popIn {
@@ -607,9 +630,7 @@
     <main class="main">
   <div class="container">
     <header class="header">
-      <div class="aot-img-wrap">
-        <img src="shingeki.png" alt="진격의 거인" />
-      </div>
+      <div class="aot-img-wrap empty" id="keroroDisplay" title="나온 번호의 케로로 캐릭터"></div>
       <h1>로또 번호 추첨</h1>
       <p class="subtitle">행운의 번호를 뽑아보세요</p>
     </header>
@@ -775,6 +796,8 @@
     const ROLL_FAST_MS = 32;
     const ROLL_SLOW_STEPS = 5;
     const ROLL_TOTAL_QUICK = 10;
+    const KERORO_CHARS = 13;
+    function getRandomCharIndex() { return Math.floor(Math.random() * KERORO_CHARS); }
 
     const ballsRow = document.getElementById('ballsRow');
     const emptyState = document.getElementById('emptyState');
@@ -835,9 +858,31 @@
       setTimeout(() => wrap.remove(), 1800);
     }
 
+    function setBallCharPosition(ballEl) {
+      var charIdx = parseInt(ballEl.getAttribute('data-char'), 10) || 0;
+      var col = charIdx % 8;
+      var row = Math.floor(charIdx / 8);
+      var x = -col * 12.5;
+      var y = -row * 100;
+      var inner = ballEl.querySelector('.ball-char');
+      if (inner) inner.style.backgroundPosition = x + '% ' + y + '%';
+      updateKeroroDisplay(charIdx);
+    }
+
+    function updateKeroroDisplay(charIdx) {
+      var el = document.getElementById('keroroDisplay');
+      if (!el) return;
+      el.classList.remove('empty');
+      el.style.backgroundImage = 'url(keroro-characters.png)';
+      var col = charIdx % 8;
+      var row = Math.floor(charIdx / 8);
+      el.style.backgroundPosition = (-col * 12.5) + '% ' + (-row * 100) + '%';
+    }
+
     function rollBall(ballEl, finalNumber, isBonus, onComplete) {
       ballEl.classList.add('rolling');
-      ballEl.textContent = '?';
+      var numEl = ballEl.querySelector('.ball-num');
+      if (numEl) numEl.textContent = '?'; else ballEl.textContent = '?';
 
       let step = 0;
       const totalQuick = ROLL_TOTAL_QUICK;
@@ -847,19 +892,21 @@
       function tick() {
         step++;
         if (step <= totalQuick) {
-          ballEl.textContent = randomNum();
+          if (numEl) numEl.textContent = randomNum(); else ballEl.textContent = randomNum();
           setTimeout(tick, ROLL_FAST_MS);
           return;
         }
         if (step <= totalQuick + slowSteps) {
           const slowIndex = step - totalQuick - 1;
-          ballEl.textContent = slowIndex === slowSteps - 1 ? finalNumber : randomNum();
+          var show = slowIndex === slowSteps - 1 ? finalNumber : randomNum();
+          if (numEl) numEl.textContent = show; else ballEl.textContent = show;
           if (slowIndex < slowSteps - 1) {
             setTimeout(tick, slowDelays[slowIndex]);
           } else {
             ballEl.classList.remove('rolling');
             ballEl.classList.add('revealed');
-            ballEl.textContent = finalNumber;
+            if (numEl) numEl.textContent = finalNumber; else ballEl.textContent = finalNumber;
+            setBallCharPosition(ballEl);
             shakeCard();
             setTimeout(() => {
               ballEl.classList.remove('revealed');
@@ -909,14 +956,17 @@
       ballsRow.innerHTML = '';
       drawStatus.style.display = 'block';
       bonusRow.style.display = 'none';
+      var keroroEl = document.getElementById('keroroDisplay');
+      if (keroroEl) { keroroEl.classList.add('empty'); keroroEl.style.backgroundImage = 'none'; }
       const ballEls = [];
 
       function runNext(index) {
         if (index >= MAIN_COUNT) {
           setStatus('보너스 번호', true);
           bonusRow.style.display = 'flex';
-          bonusBall.textContent = '?';
           bonusBall.className = 'ball ball-bonus ball-enter';
+          bonusBall.setAttribute('data-char', getRandomCharIndex());
+          bonusBall.innerHTML = '<span class="ball-char"></span><span class="ball-num">?</span>';
           bonusBall.classList.remove('rolling', 'revealed');
           setTimeout(() => {
             bonusBall.classList.remove('ball-enter');
@@ -938,7 +988,8 @@
         setStatus(`${index + 1}번째 공 추첨 중`, true);
         const ball = document.createElement('div');
         ball.className = `ball ${BALL_COLORS[index]} ball-enter`;
-        ball.textContent = '?';
+        ball.setAttribute('data-char', getRandomCharIndex());
+        ball.innerHTML = '<span class="ball-char"></span><span class="ball-num">?</span>';
         ballsRow.appendChild(ball);
         ballEls.push(ball);
         setTimeout(() => {
