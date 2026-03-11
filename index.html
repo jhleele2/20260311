@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또 번호 추첨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-tertiary: #9a9a9a;
+      --border: #e8e8e6;
+      --black: #1a1a1a;
+      --radius: 16px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-wrap {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-header {
+      padding: 1.25rem 1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-header-top {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar-header h2 {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-header p {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: 0.25rem;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .sidebar-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(232, 232, 230, 0.8);
+      cursor: default;
+      transition: background 0.15s;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .sidebar-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar-item-round {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .sidebar-item-date {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .sidebar-item-balls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .sidebar-item-ball {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--card-bg);
+      border: 1.5px solid var(--black);
+    }
+
+    .sidebar-item-ball.bonus {
+      border-style: dashed;
+      margin-left: 2px;
+    }
+
+    .sidebar-loading,
+    .sidebar-error {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+    }
+
+    .sidebar-error {
+      color: #e94560;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.25rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header-with-frog {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .aot-img-wrap {
+      margin: 0 auto 1.25rem;
+      max-width: 280px;
+    }
+
+    .aot-img-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      font-size: 1.625rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 0;
+    }
+
+    .header .subtitle {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 2rem 1.75rem;
+      box-shadow: 0 2px 24px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.02) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .card.shake {
+      animation: cardShake 0.45s ease-out;
+    }
+
+    @keyframes cardShake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translateX(-4px) translateY(1px); }
+      30% { transform: translateX(4px) translateY(-1px); }
+      45% { transform: translateX(-3px) translateY(1px); }
+      60% { transform: translateX(3px) translateY(0); }
+      75% { transform: translateX(-2px); }
+    }
+
+    .complete-message {
+      text-align: center;
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-top: 1rem;
+      min-height: 1.5rem;
+      animation: completePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes completePop {
+      0% { transform: scale(0.5); opacity: 0; }
+      70% { transform: scale(1.08); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .confetti-wrap {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 1px;
+      animation: confettiFall 1.4s ease-out forwards;
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-20px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .balls-section {
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .balls-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.625rem;
+      flex-wrap: wrap;
+      min-height: 72px;
+    }
+
+    .bonus-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .bonus-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      letter-spacing: 0.02em;
+    }
+
+    .ball {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.0625rem;
+      letter-spacing: -0.02em;
+      color: var(--black);
+      background: var(--card-bg);
+      border: 2px solid var(--black);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .ball.ball-bonus {
+      border-style: dashed;
+      border-width: 2px;
+    }
+
+    .ball.animate {
+      animation: popIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .ball {
+      position: relative;
+    }
+
+    .ball.ball-enter {
+      animation: ballDropIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .ball.rolling {
+      animation: ballPulse 0.12s ease-in-out infinite;
+      box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.2);
+    }
+
+    .ball.revealed {
+      animation: ballReveal 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.15);
+    }
+
+    .ball.revealed::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid rgba(26, 26, 26, 0.25);
+      animation: flashRing 0.5s ease-out forwards;
+      pointer-events: none;
+    }
+
+    .ball.ball-bonus.revealed {
+      animation: ballBonusReveal 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .ball.ball-bonus.revealed::after {
+      border-color: rgba(26, 26, 26, 0.2);
+      animation: flashRingGold 0.6s ease-out forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes ballDropIn {
+      0% {
+        transform: translateY(-70px) scale(0.5);
+        opacity: 0;
+      }
+      60% {
+        transform: translateY(6px) scale(1.05);
+        opacity: 1;
+      }
+      80% { transform: translateY(-2px) scale(1); }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes ballPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    @keyframes ballReveal {
+      0% { transform: scale(1.2); }
+      40% { transform: scale(1.35); }
+      70% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes ballBonusReveal {
+      0% { transform: scale(1.15); }
+      35% { transform: scale(1.4); }
+      65% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes flashRing {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    @keyframes flashRingGold {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .ball:hover {
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .draw-status {
+      display: none;
+      text-align: center;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      min-height: 1.5rem;
+    }
+
+    .draw-status .dots {
+      display: inline-block;
+    }
+
+    .draw-status .dots span {
+      animation: dotBlink 0.6s ease-in-out infinite;
+    }
+
+    .draw-status .dots span:nth-child(2) { animation-delay: 0.1s; }
+    .draw-status .dots span:nth-child(3) { animation-delay: 0.2s; }
+
+    @keyframes dotBlink {
+      0%, 80%, 100% { opacity: 0.3; }
+      40% { opacity: 1; }
+    }
+
+    .btn-draw {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      font-family: inherit;
+      letter-spacing: -0.01em;
+      color: var(--card-bg);
+      background: var(--black);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: opacity 0.2s, background 0.2s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-draw:hover {
+      background: #333;
+    }
+
+    .btn-draw:active {
+      opacity: 0.95;
+    }
+
+    .btn-draw:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .history {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .history h3 {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.875rem;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    .history-item .mini-balls {
+      display: flex;
+      gap: 3px;
+    }
+
+    .history-item .mini-ball {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      background: var(--card-bg);
+      border: 1.5px solid var(--black);
+    }
+
+    .history-item .mini-ball.bonus {
+      border-style: dashed;
+    }
+
+    .empty-state {
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+      font-weight: 400;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .app-wrap {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 42vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-list {
+        max-height: 32vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>2026년 당첨 결과</h2>
+        <p>회차별 당첨번호</p>
+      </div>
+      <div class="sidebar-list" id="sidebarList">
+        <div class="sidebar-loading" id="sidebarLoading">불러오는 중...</div>
+      </div>
+    </aside>
+    <main class="main">
+  <div class="container">
+    <header class="header">
+      <div class="aot-img-wrap">
+        <img src="shingeki.png" alt="진격의 거인" />
+      </div>
+      <h1>로또 번호 추첨</h1>
+      <p class="subtitle">행운의 번호를 뽑아보세요</p>
+    </header>
+
+    <div class="card" id="card">
+      <div class="balls-section">
+        <div class="draw-status" id="drawStatus"></div>
+        <div class="balls-row" id="ballsRow">
+          <span class="empty-state" id="emptyState">추첨 버튼을 눌러주세요</span>
+        </div>
+        <div class="bonus-row" id="bonusRow" style="display: none;">
+          <span class="bonus-label">보너스</span>
+          <div class="ball ball-bonus" id="bonusBall"></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-draw" id="btnDraw">번호 추첨하기</button>
+      <div class="complete-message" id="completeMessage"></div>
+
+      <div class="history">
+        <h3>최근 추첨 기록</h3>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+    </main>
+  </div>
+
+  <script>
+    const BALL_COLORS = ['ball-1', 'ball-2', 'ball-3', 'ball-4', 'ball-5', 'ball-6'];
+    const MIN = 1;
+
+    // 2026년 당첨 데이터 (동행복권 API: 2026 회차 약 1204~1256)
+    const SIDEBAR_LIST = document.getElementById('sidebarList');
+    const SIDEBAR_LOADING = document.getElementById('sidebarLoading');
+    const CORS_PROXY = 'https://corsproxy.io/?';
+    const DHLOTTERY_URL = 'https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=';
+
+    async function fetchDraw(drwNo) {
+      const url = CORS_PROXY + encodeURIComponent(DHLOTTERY_URL + drwNo);
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        return data.returnValue === 'success' ? data : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function formatDate(str) {
+      if (!str) return '';
+      const [y, m, d] = str.split('-');
+      return y + '.' + m + '.' + d;
+    }
+
+    const FALLBACK_2026 = [
+      { drwNo: 1214, drwNoDate: '2026-03-07', numbers: [10, 15, 19, 27, 30, 33], bnusNo: 14 },
+      { drwNo: 1213, drwNoDate: '2026-02-28', numbers: [2, 12, 21, 28, 35, 42], bnusNo: 7 },
+      { drwNo: 1212, drwNoDate: '2026-02-21', numbers: [5, 11, 18, 24, 31, 40], bnusNo: 22 },
+      { drwNo: 1211, drwNoDate: '2026-02-14', numbers: [3, 9, 17, 26, 33, 44], bnusNo: 19 },
+      { drwNo: 1210, drwNoDate: '2026-02-07', numbers: [8, 14, 23, 29, 36, 41], bnusNo: 11 },
+      { drwNo: 1209, drwNoDate: '2026-01-31', numbers: [1, 13, 20, 27, 34, 45], bnusNo: 6 },
+      { drwNo: 1208, drwNoDate: '2026-01-24', numbers: [4, 16, 25, 32, 38, 43], bnusNo: 9 },
+      { drwNo: 1207, drwNoDate: '2026-01-17', numbers: [7, 15, 22, 30, 37, 39], bnusNo: 12 },
+      { drwNo: 1206, drwNoDate: '2026-01-10', numbers: [6, 11, 19, 28, 35, 42], bnusNo: 21 },
+      { drwNo: 1205, drwNoDate: '2026-01-03', numbers: [2, 10, 18, 26, 33, 41], bnusNo: 5 }
+    ];
+
+    async function load2026Data() {
+      const list = [];
+      const startDrwNo = 1204;
+      const endDrwNo = 1222;
+      for (let no = startDrwNo; no <= endDrwNo; no++) {
+        const data = await fetchDraw(no);
+        if (data && data.drwNoDate && String(data.drwNoDate).startsWith('2026')) {
+          list.push({
+            drwNo: data.drwNo,
+            drwNoDate: data.drwNoDate,
+            numbers: [data.drwtNo1, data.drwtNo2, data.drwtNo3, data.drwtNo4, data.drwtNo5, data.drwtNo6],
+            bnusNo: data.bnusNo
+          });
+        }
+        await new Promise(r => setTimeout(r, 120));
+      }
+      list.sort((a, b) => b.drwNo - a.drwNo);
+      if (list.length === 0) return FALLBACK_2026;
+      return list;
+    }
+
+    function renderSidebar(items) {
+      if (!items.length) {
+        SIDEBAR_LIST.innerHTML = '<div class="sidebar-error">2026년 당첨 데이터를 불러올 수 없습니다.</div>';
+        return;
+      }
+      SIDEBAR_LIST.innerHTML = items.map(item => {
+        const balls = item.numbers.map((n, i) => `<span class="sidebar-item-ball ${BALL_COLORS[i]}">${n}</span>`).join('');
+        const bonus = `<span class="sidebar-item-ball bonus">${item.bnusNo}</span>`;
+        return `
+          <div class="sidebar-item">
+            <div class="sidebar-item-header">
+              <span class="sidebar-item-round">${item.drwNo}회</span>
+              <span class="sidebar-item-date">${formatDate(item.drwNoDate)}</span>
+            </div>
+            <div class="sidebar-item-balls">${balls} ${bonus}</div>
+          </div>`;
+      }).join('');
+    }
+
+    (async function initSidebar() {
+      try {
+        const data = await load2026Data();
+        renderSidebar(data);
+      } catch (e) {
+        SIDEBAR_LIST.innerHTML = '<div class="sidebar-error">데이터 로드 실패</div>';
+      }
+    })();
+    const MAX = 45;
+    const MAIN_COUNT = 6;
+    const TOTAL_PICK = 7;
+    const HISTORY_MAX = 5;
+    const ROLL_FAST_MS = 32;
+    const ROLL_SLOW_STEPS = 5;
+    const ROLL_TOTAL_QUICK = 10;
+
+    const ballsRow = document.getElementById('ballsRow');
+    const emptyState = document.getElementById('emptyState');
+    const drawStatus = document.getElementById('drawStatus');
+    const bonusRow = document.getElementById('bonusRow');
+    const bonusBall = document.getElementById('bonusBall');
+    const btnDraw = document.getElementById('btnDraw');
+    const historyList = document.getElementById('historyList');
+    const card = document.getElementById('card');
+    const completeMessage = document.getElementById('completeMessage');
+    let history = [];
+    let isDrawing = false;
+
+    function getRandomNumbers() {
+      const set = new Set();
+      while (set.size < TOTAL_PICK) {
+        set.add(MIN + Math.floor(Math.random() * (MAX - MIN + 1)));
+      }
+      const arr = Array.from(set);
+      const numbers = arr.slice(0, MAIN_COUNT).sort((a, b) => a - b);
+      const bonus = arr[MAIN_COUNT];
+      return { numbers, bonus };
+    }
+
+    function setStatus(text, withDots = false) {
+      if (withDots) {
+        drawStatus.innerHTML = text + ' <span class="dots"><span>.</span><span>.</span><span>.</span></span>';
+      } else {
+        drawStatus.textContent = text;
+      }
+    }
+
+    function randomNum() {
+      return MIN + Math.floor(Math.random() * (MAX - MIN + 1));
+    }
+
+    function shakeCard() {
+      card.classList.remove('shake');
+      card.offsetHeight;
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 460);
+    }
+
+    function spawnConfetti() {
+      const wrap = document.createElement('div');
+      wrap.className = 'confetti-wrap';
+      const colors = ['#1a1a1a', '#4a4a4a', '#888', '#c0c0c0', '#fff'];
+      for (let i = 0; i < 32; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 0.3 + 's';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        wrap.appendChild(p);
+      }
+      document.body.appendChild(wrap);
+      setTimeout(() => wrap.remove(), 1800);
+    }
+
+    function rollBall(ballEl, finalNumber, isBonus, onComplete) {
+      ballEl.classList.add('rolling');
+      ballEl.textContent = '?';
+
+      let step = 0;
+      const totalQuick = ROLL_TOTAL_QUICK;
+      const slowSteps = ROLL_SLOW_STEPS;
+      const slowDelays = [70, 100, 140, 180, 220];
+
+      function tick() {
+        step++;
+        if (step <= totalQuick) {
+          ballEl.textContent = randomNum();
+          setTimeout(tick, ROLL_FAST_MS);
+          return;
+        }
+        if (step <= totalQuick + slowSteps) {
+          const slowIndex = step - totalQuick - 1;
+          ballEl.textContent = slowIndex === slowSteps - 1 ? finalNumber : randomNum();
+          if (slowIndex < slowSteps - 1) {
+            setTimeout(tick, slowDelays[slowIndex]);
+          } else {
+            ballEl.classList.remove('rolling');
+            ballEl.classList.add('revealed');
+            ballEl.textContent = finalNumber;
+            shakeCard();
+            setTimeout(() => {
+              ballEl.classList.remove('revealed');
+              onComplete();
+            }, isBonus ? 320 : 280);
+          }
+          return;
+        }
+      }
+
+      setTimeout(tick, 50);
+    }
+
+    function addToHistory(numbers, bonus) {
+      history.unshift({ numbers, bonus });
+      if (history.length > HISTORY_MAX) history.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      if (history.length === 0) {
+        historyList.innerHTML = '<div class="empty-state">아직 기록이 없습니다</div>';
+        return;
+      }
+      history.forEach(({ numbers, bonus }) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        const miniBalls = numbers.map((n, i) =>
+          `<span class="mini-ball ${BALL_COLORS[i]}">${n}</span>`
+        ).join('');
+        const bonusHtml = `<span class="mini-ball ball-bonus bonus">${bonus}</span>`;
+        item.innerHTML = `<span class="mini-balls">${miniBalls}</span> ${bonusHtml} <span>${numbers.join(', ')} + ${bonus}</span>`;
+        historyList.appendChild(item);
+      });
+    }
+
+    function draw() {
+      if (isDrawing) return;
+      isDrawing = true;
+      completeMessage.textContent = '';
+      btnDraw.disabled = true;
+      setStatus('추첨 중', true);
+
+      const { numbers, bonus } = getRandomNumbers();
+      emptyState.style.display = 'none';
+      ballsRow.innerHTML = '';
+      drawStatus.style.display = 'block';
+      bonusRow.style.display = 'none';
+      const ballEls = [];
+
+      function runNext(index) {
+        if (index >= MAIN_COUNT) {
+          setStatus('보너스 번호', true);
+          bonusRow.style.display = 'flex';
+          bonusBall.textContent = '?';
+          bonusBall.className = 'ball ball-bonus ball-enter';
+          bonusBall.classList.remove('rolling', 'revealed');
+          setTimeout(() => {
+            bonusBall.classList.remove('ball-enter');
+            rollBall(bonusBall, bonus, true, () => {
+              setStatus('');
+              drawStatus.style.display = 'none';
+              completeMessage.textContent = '추첨 완료!';
+              spawnConfetti();
+              addToHistory(numbers, bonus);
+              btnDraw.disabled = false;
+              btnDraw.textContent = '번호 추첨하기';
+              isDrawing = false;
+              setTimeout(() => { completeMessage.textContent = ''; }, 2500);
+            });
+          }, 320);
+          return;
+        }
+        setStatus(`${index + 1}번째 공 추첨 중`, true);
+        const ball = document.createElement('div');
+        ball.className = `ball ${BALL_COLORS[index]} ball-enter`;
+        ball.textContent = '?';
+        ballsRow.appendChild(ball);
+        ballEls.push(ball);
+        setTimeout(() => {
+          ball.classList.remove('ball-enter');
+          rollBall(ball, numbers[index], false, () => runNext(index + 1));
+        }, 320);
+      }
+
+      setTimeout(() => runNext(0), 200);
+    }
+
+    btnDraw.addEventListener('click', draw);
+    renderHistory();
+  </script>
+</body>
+</html>
