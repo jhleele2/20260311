@@ -30,15 +30,29 @@
       font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
       font-weight: 400;
       min-height: 100vh;
-      background: var(--bg);
+      background: var(--bg) url('keroro-group.png') center center no-repeat;
+      background-size: cover;
+      background-attachment: fixed;
       color: var(--text);
       margin: 0;
       -webkit-font-smoothing: antialiased;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.72);
+      z-index: 0;
+      pointer-events: none;
     }
 
     .app-wrap {
       display: flex;
       min-height: 100vh;
+      position: relative;
+      z-index: 1;
     }
 
     .sidebar {
