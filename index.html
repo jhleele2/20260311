@@ -645,24 +645,43 @@
     // Supabase: 추첨과 완전 분리. 버튼 연결 후에만 스크립트 로드 (추첨 방해 안 함)
     var supabase = null;
     function loadSupabaseAndInit() {
+      var origin = window.location.origin;
+      if (origin === 'null' || origin === '' || origin.indexOf('file') === 0) {
+        console.warn('[Supabase] file:// 로 열면 저장 안 됨. 배포된 주소(예: https://xxx.vercel.app)에서 열어주세요.');
+        return;
+      }
+      function doInit() {
+        fetch(origin + '/api/config')
+          .then(function(r) { return r.ok ? r.json() : {}; })
+          .then(function(d) {
+            var url = d.SUPABASE_URL || '';
+            var key = d.SUPABASE_ANON_KEY || '';
+            if (!url || !key) {
+              console.warn('[Supabase] 환경 변수 없음. Vercel에 SUPABASE_URL, SUPABASE_ANON_KEY 넣고 Redeploy 했는지 확인.');
+              return;
+            }
+            if (window.supabase) {
+              supabase = window.supabase.createClient(url, key);
+              console.log('[Supabase] 연결됨');
+            }
+          })
+          .catch(function(e) { console.warn('[Supabase] config 로드 실패:', e.message); });
+      }
       if (window.supabase) {
-        fetch(window.location.origin + '/api/config').then(function(r) { return r.ok ? r.json() : {}; }).then(function(d) {
-          if (d.SUPABASE_URL && d.SUPABASE_ANON_KEY) supabase = window.supabase.createClient(d.SUPABASE_URL, d.SUPABASE_ANON_KEY);
-        }).catch(function() {});
+        doInit();
         return;
       }
       var s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-      s.onload = function() {
-        fetch(window.location.origin + '/api/config').then(function(r) { return r.ok ? r.json() : {}; }).then(function(d) {
-          if (d.SUPABASE_URL && d.SUPABASE_ANON_KEY && window.supabase) supabase = window.supabase.createClient(d.SUPABASE_URL, d.SUPABASE_ANON_KEY);
-        }).catch(function() {});
-      };
+      s.onload = doInit;
+      s.onerror = function() { console.warn('[Supabase] 스크립트 로드 실패'); };
       document.body.appendChild(s);
     }
     function saveLottoToSupabase(numbers, bonus) {
       if (!supabase) return;
-      try { supabase.from('lotto_draws').insert([{ numbers: numbers, bonus: bonus }]); } catch (e) {}
+      supabase.from('lotto_draws').insert([{ numbers: numbers, bonus: bonus }])
+        .then(function() { console.log('[Supabase] 저장 완료'); })
+        .catch(function(e) { console.warn('[Supabase] 저장 실패:', e.message); });
     }
 
     // 2026년 당첨 데이터 (동행복권 API: 2026 회차 약 1204~1256)
